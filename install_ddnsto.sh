@@ -3,7 +3,7 @@
 version="2.3"
 
 # 基础URL配置
-BASE_URL='http://fw.koolcenter.com/binary/ddnsto/openwrt'
+BASE_URL='https://raw.githubusercontent.com/YGAS/ddnsto-install/refs/heads/main'
 
 # 版本目录配置
 LITE_DIR='lite'
