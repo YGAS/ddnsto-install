@@ -3,7 +3,7 @@
 version="2.3"
 
 # 基础URL配置
-BASE_URL='https://raw.githubusercontent.com/YGAS/ddnsto-install/refs/heads/main'
+BASE_URL='https://raw.githubusercontent.com/YGAS/ddnsto-install/main'
 
 # 版本目录配置
 LITE_DIR='lite'
