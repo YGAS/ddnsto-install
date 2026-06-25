@@ -380,18 +380,28 @@ detect_package_manager
 update_package_names
 
 # 检查 LuCI 兼容性
-# LuCI 2.0+ (OpenWrt 23.05+) 使用 ucode，需要 luci-compat 来兼容 CBI 模块
+# LuCI 2.0+ (OpenWrt 23.05+) 使用 ucode，需要 luci-compat 和 luci-lua-runtime 来兼容 CBI 模块
 if [ "$PKG_MANAGER" = "opkg" ]; then
     # OPKG 系统：检查是否存在新版 LuCI 但缺少 CBI 模块
     if [ -f /www/luci-static/resources/luci.js ] && [ ! -f /usr/lib/lua/luci/cbi.lua ]; then
         info "Installing luci-compat for LuCI 2.0+ compatibility..."
-        opkg install luci-compat || true
+        opkg update && opkg install luci-compat || true
+    fi
+    # 检查并安装 luci-lua-runtime 依赖（LuCI 2.0+ 需要）
+    if ! opkg list-installed | grep -q "^luci-lua-runtime"; then
+        info "Installing luci-lua-runtime dependency..."
+        opkg update && opkg install luci-lua-runtime || true
     fi
 elif [ "$PKG_MANAGER" = "apk" ]; then
-    # APK 系统 (OpenWrt 25+)：必须安装 luci-compat
+    # APK 系统 (OpenWrt 25+)：必须安装 luci-compat 和 luci-lua-runtime
     if [ -f /www/luci-static/resources/luci.js ] && [ ! -f /usr/lib/lua/luci/cbi.lua ]; then
         info "Installing luci-compat for LuCI 2.0+ compatibility (APK system)..."
-        apk add luci-compat || warning "Failed to install luci-compat, LuCI interface may not work properly"
+        apk update && apk add luci-compat || warning "Failed to install luci-compat, LuCI interface may not work properly"
+    fi
+    # 检查并安装 luci-lua-runtime 依赖（LuCI 2.0+ 需要）
+    if ! apk info -e luci-lua-runtime >/dev/null 2>&1; then
+        info "Installing luci-lua-runtime dependency..."
+        apk update && apk add luci-lua-runtime || warning "Failed to install luci-lua-runtime, LuCI interface may not work properly"
     fi
 fi
 
