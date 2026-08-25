@@ -9,11 +9,13 @@ BASE_URL='http://fw.koolcenter.com/binary/ddnsto/openwrt'
 LITE_DIR='lite'
 STANDARD_DIR='standard'
 
-# 版本号文件路径
-VERSION_FILE="${VERSION_FILE:-VERSION}"
+# 版本号文件路径（lite 与 standard 各自独立）
+LITE_VERSION_FILE="${LITE_VERSION_FILE:-VERSION_LITE}"
+STANDARD_VERSION_FILE="${STANDARD_VERSION_FILE:-VERSION}"
 
-# 默认版本号（当无法读取版本文件时使用）
-VERSION_DEFAULT="3.1.7"
+# 默认版本号（当无法读取版本文件时使用，按版本类型分别回退）
+LITE_VERSION_DEFAULT="4.2.2"
+STANDARD_VERSION_DEFAULT="4.2.3"
 
 # 内存阈值配置（MB）- 小于此值使用lite版本，大于等于使用standard版本
 MEM_THRESHOLD_MB=900
@@ -86,31 +88,46 @@ get_mem_mb() {
     fi
 }
 
-# 远程版本号文件URL
-VERSION_URL="${BASE_URL}/VERSION"
+# 远程版本号文件 URL（lite 与 standard 各自独立）
+LITE_VERSION_URL="${BASE_URL}/VERSION_LITE"
+STANDARD_VERSION_URL="${BASE_URL}/VERSION"
 
 # 读取版本号（优先从远程获取）
+# 参数: $1 = 版本类型 (lite 或 standard)，缺省时使用 SELECTED_VERSION
 get_version() {
+    local version_type="${1:-${SELECTED_VERSION:-standard}}"
+    local version_url version_file version_default
     local version_content
-    
+
+    # 根据版本类型选择对应的 URL、本地文件与默认值
+    if [ "${version_type}" = "lite" ]; then
+        version_url="${LITE_VERSION_URL}"
+        version_file="${LITE_VERSION_FILE}"
+        version_default="${LITE_VERSION_DEFAULT}"
+    else
+        version_url="${STANDARD_VERSION_URL}"
+        version_file="${STANDARD_VERSION_FILE}"
+        version_default="${STANDARD_VERSION_DEFAULT}"
+    fi
+
     # 首先尝试从远程下载版本号文件
     if command_exists curl; then
-        version_content=$(curl -fsSLk "${VERSION_URL}" 2>/dev/null | tr -d '[:space:]')
+        version_content=$(curl -fsSLk "${version_url}" 2>/dev/null | tr -d '[:space:]')
     elif command_exists wget; then
-        version_content=$(wget -q --no-check-certificate "${VERSION_URL}" -O - 2>/dev/null | tr -d '[:space:]')
+        version_content=$(wget -q --no-check-certificate "${version_url}" -O - 2>/dev/null | tr -d '[:space:]')
     fi
-    
+
     # 如果远程获取成功且不为空，使用远程版本号
     if [ -n "${version_content}" ]; then
         echo "${version_content}"
         return 0
     fi
-    
+
     # 其次尝试读取本地版本文件
-    if [ -f "${VERSION_FILE}" ]; then
-        cat "${VERSION_FILE}" 2>/dev/null | tr -d '[:space:]' || echo "${VERSION_DEFAULT}"
+    if [ -f "${version_file}" ]; then
+        cat "${version_file}" 2>/dev/null | tr -d '[:space:]' || echo "${version_default}"
     else
-        echo "${VERSION_DEFAULT}"
+        echo "${version_default}"
     fi
 }
 
@@ -187,10 +204,9 @@ select_version() {
     fi
 }
 
-# 获取版本号
+# 获取当前选定版本（lite/standard）对应的版本号
 get_version_number() {
-    VERSION_NUM="$(get_version)"
-    echo "${VERSION_NUM}"
+    get_version "${SELECTED_VERSION}"
 }
 
 # 构建下载URL
